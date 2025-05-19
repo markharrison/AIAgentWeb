@@ -1,0 +1,32 @@
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0 10px 10px 10px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 5px 15px;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background: #007AFF;
+    color: white;
+    margin-left: auto;
+}
+
+.assistant-message {
+    background: #f0f0f0;
+    color: #333;
+}
+
+select.form-control {
+    appearance: none; /* Removes default styling */
+    background-image: url('/images/dropdown-arrow.svg'); /* Add a dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    padding-right: 30px; /* Add space for the arrow */
+}

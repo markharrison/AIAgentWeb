@@ -1,0 +1,65 @@
+﻿@page
+@model AIAgentWeb.Pages.ChatSKModel
+@{
+    ViewData["Title"] = "ChatSK";
+}
+
+<h4>ChatSK</h4>
+@if (TempData["CreateMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["CreateMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+@if (Model.CurrentForm == ChatSKModel.FormType.GetThread)
+{
+    <form method="post" id="IdGetThreadForm">
+        <div>
+            <label asp-for="AgentId">Agent Id:</label>
+            <select class="form-control" asp-for="AgentId" asp-items="Model.AgentList">
+            </select>
+            <span asp-validation-for="AgentId" class="text-danger"></span>
+        </div>
+        <button id="IdGetThreadBut" class="btn btn-primary mt-2" type="submit">Get Thread</button>
+    </form>
+}
+@if (Model.CurrentForm == ChatSKModel.FormType.Chat)
+{
+    <div id="IdThreadInfo" class="mb-3">
+        Agent Id: @Model.AgentId, @Model.AgentDetails <br />
+        Thread Id: @Model.ThreadId
+    </div>
+    <div id="IdChatContainer" class="chat-messages" style="display: none;">
+    </div>
+    <form method="post" id="IdChatForm" asp-page-handler="Chat">
+        <div>
+            <input id="IdAsk" class="form-control" type="text" asp-for="Ask" placeholder="Ask something ...." />
+            <span asp-validation-for="Ask" class="text-danger"></span>
+        </div>
+        <input type="hidden" asp-for="ThreadId" />
+        <input type="hidden" asp-for="AgentId" />
+        <button id="IdChatBut" class="btn btn-primary mt-2" type="submit">Enter</button>
+    </form>
+}
+<div id="IdSpinner" class="mt-2" style="display: none;">
+    <p id="IdSpinnerText">Get Thread ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/chatsk.css" />
+}
+
+@section Scripts {
+    <script src="~/js/app.js"></script>
+    <script src="~/js/chatsk.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+}
+

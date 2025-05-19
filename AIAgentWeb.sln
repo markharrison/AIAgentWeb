@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35323.107
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIAgentWeb", "AIAgentWeb.csproj", "{ED326D85-49A3-387D-5045-9A89AA371C34}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ED326D85-49A3-387D-5045-9A89AA371C34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED326D85-49A3-387D-5045-9A89AA371C34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED326D85-49A3-387D-5045-9A89AA371C34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED326D85-49A3-387D-5045-9A89AA371C34}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7C702034-4322-48B3-8F16-6CAD16E85BA3}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,34 @@
+﻿@page
+@model GetStoresModel
+@{
+    ViewData["Title"] = "Vector Stores";
+}
+
+<h4>Get Vector Stores</h4>
+@if (TempData["DeleteMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["DeleteMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+<div id="IdDataContainer" style="display: none;">
+</div>
+
+<div id="IdSpinner" style="display: block;">
+    <p id="IdSpinnerText">Loading ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+
+@section Scripts {
+  
+    <script src="~/js/app.js" ></script>
+    <script src="~/js/getstores.js" ></script>
+
+}

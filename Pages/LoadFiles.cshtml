@@ -1,0 +1,24 @@
+﻿@page
+@model LoadFilesModel
+@{
+    ViewData["Title"] = "Load Files to Vector Store";
+}
+
+<h4>Load Files to Vector Store</h4>
+@Html.Raw(Model.strFilenames)
+<div id="IdSpinner" style="display: none;">
+    <p id="IdSpinnerText">Processing ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+<div class="mb-3" id="IdDataContainer" style="display: none;">
+</div>
+@if (Model.AreFilesAvailable)
+{
+    <button class='btn btn-primary' id="IdLoadFilesBut" onclick="loadFiles()">Load Files</button>
+}
+
+@section Scripts {
+    <script src="~/js/app.js" ></script>
+    <script src="~/js/loadfiles.js" ></script>
+}

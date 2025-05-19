@@ -1,0 +1,36 @@
+﻿@page
+@model AIAgentWeb.Pages.UploadFilesModel
+@{
+    ViewData["Title"] = "Upload Files to Interim Storage";
+}
+<h4>Upload Files to Interim Storage</h4>
+
+@if (TempData["UploadMessage"] != null)
+{
+    <div id="IdAlertUpload" class="alert alert-success">
+        @TempData["UploadMessage"]
+    </div>
+}
+<div id="IdAlertFileWarning" class="alert alert-warning" style="display: none;">
+</div>
+@Html.Raw(Model.strFilenames)
+<form method="post" enctype="multipart/form-data">
+    <div>
+        <label for="files">Select files to upload: </label>
+        <input type="file" id="IdFiles" name="Files" multiple />
+        <span asp-validation-for="Files" class="text-danger"></span>
+    </div>
+    <div class="mt-2">
+        <label asp-for="DeleteExistingFiles">Delete Existing Files: </label>
+        <input type="checkbox" asp-for="DeleteExistingFiles" />
+    </div>
+    <div class="mt-2">
+        <button class='btn btn-primary' id="IdSubmitBut" type="submit" disabled>Upload</button>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/app.js" ></script>
+    <script src="~/js/uploadfiles.js" ></script>
+    <partial name="_ValidationScriptsPartial" />
+}

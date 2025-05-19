@@ -1,0 +1,28 @@
+﻿@page
+@model GetAgentsModel
+@{
+    ViewData["Title"] = "List Agents";
+}
+
+<h4>Get Agents</h4>
+@if (TempData["DeleteMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["DeleteMessage"]
+    </div>
+}
+<div id="IdDataContainer" style="display: none;">
+</div>
+
+<div id="IdSpinner" style="display: block;">
+    <p id="IdSpinnerText">Loading ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+
+@section Scripts {
+  
+    <script src="~/js/app.js" ></script>
+    <script src="~/js/getagents.js" ></script>
+
+}

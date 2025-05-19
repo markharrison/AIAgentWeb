@@ -1,0 +1,22 @@
+﻿@page
+@model DeleteThreadsModel
+@{
+    ViewData["Title"] = "Delete Threads";
+}
+
+<h4>Delete Threads</h4>
+<br />
+<div id="IdAlert" class="alert" style="display: none;">
+</div>
+<div id="IdSpinner" style="display: none;">
+    <p id="IdSpinnerText">Processing ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+
+<button class='btn btn-primary' id="IdDeleteThreadsBut" onclick="deleteThreads()">Delete Threads</button>
+
+@section Scripts {
+    <script src="~/js/app.js"></script>
+    <script src="~/js/deletethreads.js"></script>
+}

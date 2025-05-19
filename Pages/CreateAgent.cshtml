@@ -1,0 +1,74 @@
+﻿@page
+@model CreateAgentModel
+@{
+    ViewData["Title"] = "List Agents";
+}
+
+<h4>Create Agent</h4>
+@if (TempData["CreateMessage"] != null)
+{
+    <div class="alert alert-success">
+        @Html.Raw(@TempData["CreateMessage"] )
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<div id="IdDataContainer">
+    <form id="IdCreateForm" method="post">
+        <div class="mb-2">
+            <label asp-for="AgentName">Agent Name:</label>
+            <input class="form-control" type="text" id="IdAgentName" asp-for="AgentName" />
+            <span asp-validation-for="AgentName" class="text-danger"></span>  
+        </div>
+        <div class="mb-2">
+            <label asp-for="ModelDeployment">Model Deployment:</label>
+            <input class="form-control" type="text" id="IdModelDeployment" asp-for="ModelDeployment" />
+            <span asp-validation-for="ModelDeployment" class="text-danger"></span>
+        </div>
+        <div class="mb-2">
+            <label asp-for="AgentInstructions">Agent Instructions:</label>
+            <input class="form-control" type="text" id="IdAgentInstructions" asp-for="AgentInstructions" />
+            <span asp-validation-for="AgentInstructions" class="text-danger"></span>
+        </div>
+        <div class="mb-2">
+            <label asp-for="Temperature">Temperature:</label>
+            <input class="form-control" type="text" id="IdTemperature" asp-for="Temperature" />
+            <span asp-validation-for="Temperature" class="text-danger"></span>
+        </div>
+        <div class="mb-2">
+            <label asp-for="TopP">TopP:</label>
+            <input class="form-control" type="text" id="IdTopP" asp-for="TopP" />
+            <span asp-validation-for="TopP" class="text-danger"></span>
+        </div>
+        <div class="mb-2">
+            <label class="form-check-label" for="IdFileSearchTool">File Search Tools:</label>
+            <input class="form-check-input" type="checkbox" id="IdFileSearchTool" asp-for="FileSearchTool"  />
+        </div>
+        <div id="IdFileSearchGroup" style="display: none;">
+            <br />
+            <label asp-for="VectorStoreId">Vector Store Id:</label>
+            <input class="form-control" type="text" id="vectorStoreId" asp-for="VectorStoreId" />
+            <span asp-validation-for="VectorStoreId" class="text-danger"></span> 
+        </div>
+
+        <button class="btn btn-primary mt-4" id="IdSubmitBut" type="submit">Create Agent</button>
+    </form>
+</div>
+
+<div id="IdSpinner" style="display: none;">
+    <p id="IdSpinnerText">Creating ...</p>
+    <div class="spinner-border text-primary" role="status">
+    </div>
+</div>
+
+@section Scripts {
+
+    <script src="~/js/app.js"></script>
+    <script src="~/js/createagent.js"></script>
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,37 @@
+﻿@page
+@model AIAgentWeb.Pages.AppSettingsModel
+@{
+    ViewData["Title"] = "App Settings";
+}
+<h4>App Settings</h4>
+
+@if (TempData["SaveMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SaveMessage"]
+    </div>
+}
+
+<form method="post">
+    <div>
+        Project Connection String: <input class="form-control" type="text" id="IdProjectCS" name="ProjectCS" value="@Model.ProjectCS" />
+        <span asp-validation-for="ProjectCS" class="text-danger"></span>
+    </div>
+    <br />
+    <div>
+        Agent Id: <input class="form-control" type="text" id="IdAgentId" name="AgentId" value="@Model.AgentId" />
+        <span asp-validation-for="AgentId" class="text-danger"></span>
+    </div>
+    <br />
+    <div>
+        Vector Store Id: <input class="form-control" type="text" id="IdVectorStoreId" name="VectorStoreId" value="@Model.VectorStoreId" />
+        <span asp-validation-for="VectorStoreId" class="text-danger"></span>
+    </div>
+    <br />
+
+    <button class="btn btn-primary" type="submit">Save</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

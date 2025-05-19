@@ -1,0 +1,32 @@
+﻿@page
+@model AIAgentWeb.Pages.UserSettingsModel
+@{
+    ViewData["Title"] = "User Settings";
+}
+<h4>User Settings</h4>
+@if (TempData["SaveMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SaveMessage"]
+    </div>
+}
+<form method="post">
+
+    <div>
+        Theme:
+        <select class="form-control" id="idTheme" name="Theme">
+            <option value="Light" selected="@(Model.Theme == "Light")">Light</option>
+            <option value="Dark" selected="@(Model.Theme == "Dark")">Dark</option>
+        </select>
+        <span asp-validation-for="Theme" class="text-danger"></span>
+    </div>
+    <br />
+
+    <button class="btn btn-primary" type="submit">Save</button>
+</form>
+
+ 
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
