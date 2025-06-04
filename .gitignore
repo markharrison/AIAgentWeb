@@ -403,3 +403,4 @@ FodyWeavers.xsd
 /package-lock.json
 .vscode/
 .config/dotnet-tools.json
+/App_Data
