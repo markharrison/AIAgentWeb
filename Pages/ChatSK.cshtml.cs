@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
 using Microsoft.SemanticKernel.Agents.AzureAI;
@@ -205,7 +206,17 @@ namespace AIAgentWeb.Pages
                 return Page();
             }
 
-            AgentDetails = skagent?.Name;
+            AgentDetails = $"<b>{skagent?.Name}</b>";
+
+            if (skagent?.Definition.Tools != null)
+            {
+                AgentDetails += "  Tools: ";
+
+                foreach (ToolDefinition tool in skagent?.Definition.Tools!)
+                {
+                    AgentDetails += tool.GetType().Name.ToString() + "; ";
+                }
+            }
 
             ThreadId = skthread?.Id;
             CurrentForm = FormType.Chat;
@@ -239,7 +250,7 @@ namespace AIAgentWeb.Pages
                         var agentName = parts[1].Trim();
 
                         // Add to the AgentList
-                        AgentList.Add(new SelectListItem { Value = agentId, Text = $"{agentId}, {agentName}" });
+                        AgentList.Add(new SelectListItem { Value = agentId, Text = $"{agentName} - {agentId}" });
                     }
                 }
             }

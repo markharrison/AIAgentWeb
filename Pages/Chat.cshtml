@@ -33,7 +33,8 @@
 @if (Model.CurrentForm == ChatModel.FormType.Chat)
 {
     <div id="IdThreadInfo" class="mb-3">
-        Agent Id: @Model.AgentId, @Model.AgentDetails <br />
+        @Html.Raw(@Model.AgentDetails)<br />
+        Agent Id: @Model.AgentId<br />
         Thread Id: @Model.ThreadId
     </div>
     <div id="IdChatContainer" class="chat-messages" style="display: none;">

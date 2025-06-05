@@ -291,7 +291,17 @@ namespace AIAgentWeb.Pages
                 return Page();
             }
 
-            AgentDetails = agent?.Name + agent?.Tools.ToArray().ToString();
+            AgentDetails = $"<b>{agent?.Name}</b>";
+
+            if (agent?.Tools != null)
+            {
+                AgentDetails += "  Tools: ";
+
+                foreach (ToolDefinition tool in agent?.Tools!)
+                {
+                    AgentDetails += tool.GetType().Name.ToString() + "; ";
+                }
+            }
 
             (AgentThread? thread, string? error2) = await _agentStateService.CreateAgentThreadAsync();
             if (error2 != null)
@@ -332,7 +342,7 @@ namespace AIAgentWeb.Pages
                         var agentName = parts[1].Trim();
 
                         // Add to the AgentList
-                        AgentList.Add(new SelectListItem { Value = agentId, Text = $"{agentId}, {agentName}" });
+                        AgentList.Add(new SelectListItem { Value = agentId, Text = $"{agentName} - {agentId}" });
                     }
                 }
             }
