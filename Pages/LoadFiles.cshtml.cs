@@ -1,12 +1,8 @@
+using AIAgentWeb.Services;
 using Azure;
-using Azure.AI.Projects;
-using Azure.Identity;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Identity.Client;
-using System;
-using System.Collections.Concurrent;
-using System.Numerics;
 
 namespace AIAgentWeb.Pages
 {
@@ -14,16 +10,21 @@ namespace AIAgentWeb.Pages
     {
         private readonly IWebHostEnvironment _environment;
         private readonly AppConfig _appconfig;
+        private readonly AgentStateService _agentStateService;
+        private readonly PersistentAgentsClient _agentsClient;
         private static bool _inUse = false;
         private static bool _completed = false;
         private static string strHtmlProgress = "";
         private static string strHtmlVectorStore = "";
         public string strFilenames = "";
         public bool AreFilesAvailable { get; private set; } = false;
-        public LoadFilesModel(AppConfig appconfig, IWebHostEnvironment environment)
+
+        public LoadFilesModel(AppConfig appconfig, IWebHostEnvironment environment, AgentStateService agentStateService)
         {
             _environment = environment;
             _appconfig = appconfig;
+            _agentStateService = agentStateService;
+            _agentsClient = agentStateService.agentsClient;
         }
         public IActionResult OnGetLoadFiles()
         {
@@ -41,23 +42,23 @@ namespace AIAgentWeb.Pages
             return StatusCode(202, "Process started");
         }
 
-        public async Task<string> DoFileUpload(AgentsClient client, string docFilePath)
+        public async Task<string> DoFileUpload(PersistentAgentsClient client, string docFilePath)
         {
 
             try
             {
                 strHtmlProgress += $"Uploading: {Path.GetFileName(docFilePath)} ... ";
-                Response<AgentFile> uploadAgentFileResponse = await client!.UploadFileAsync(
+                Response<PersistentAgentFileInfo> uploadAgentFileResponse = await client!.Files.UploadFileAsync(
                                 filePath: docFilePath,
-                                purpose: AgentFilePurpose.Agents);
+                                purpose: PersistentAgentFilePurpose.Agents);
 
-                AgentFile uploadedAgentFile = uploadAgentFileResponse.Value;
+                PersistentAgentFileInfo uploadedAgentFile = uploadAgentFileResponse.Value;
 
                 // Wait for file processing to complete
                 while (true)
                 {
-                    Response<AgentFile> fileResponse = await client!.GetFileAsync(uploadedAgentFile.Id);
-                    AgentFile file = fileResponse.Value;
+                    Response<PersistentAgentFileInfo> fileResponse = await client!.Files.GetFileAsync(uploadedAgentFile.Id);
+                    PersistentAgentFileInfo file = fileResponse.Value;
 
                     if (file.Status == FileState.Error)
                     {
@@ -86,7 +87,7 @@ namespace AIAgentWeb.Pages
             return string.Empty;
         }
 
-        public async Task DoCreateVectorStore(AgentsClient client, List<string> fileIds)
+        public async Task DoCreateVectorStore(PersistentAgentsClient client, List<string> fileIds)
         {
 
             try
@@ -94,16 +95,16 @@ namespace AIAgentWeb.Pages
                 strHtmlProgress += "Creating Vector Store ... ";
                 string storeName = "vector-store-" + DateTime.Now.ToString("ddMMMyy-HHmm");
                 // Create a vector store with the file and wait for it to be processed.
-                Response<VectorStore> createVectorStoreResponse = await client!.CreateVectorStoreAsync(
+                Response<PersistentAgentsVectorStore> createVectorStoreResponse = await client!.VectorStores.CreateVectorStoreAsync(
                     fileIds: fileIds,
                     name: storeName);
 
-                VectorStore vectorStore = createVectorStoreResponse.Value;
+                PersistentAgentsVectorStore vectorStore = createVectorStoreResponse.Value;
 
                 // Wait for vector store processing to complete
                 while (true)
                 {
-                    Response<VectorStore> vectorStoreResponse = await client!.GetVectorStoreAsync(vectorStore.Id);
+                    Response<PersistentAgentsVectorStore> vectorStoreResponse = await client!.VectorStores.GetVectorStoreAsync(vectorStore.Id);
                     vectorStore = vectorStoreResponse.Value;
 
                     if (vectorStore.Status == VectorStoreStatus.Completed)
@@ -135,8 +136,6 @@ namespace AIAgentWeb.Pages
 
             List<string> fileIds = new List<string>();
 
-            AgentsClient client = new AgentsClient(_appconfig.ProjectCS, new DefaultAzureCredential());
-
             var appDataPath = Path.Combine(_environment.ContentRootPath, "App_Data\\files");
             if (Directory.Exists(appDataPath))
             {
@@ -147,14 +146,14 @@ namespace AIAgentWeb.Pages
                     {
                         string strFilename = Path.GetFileName(file);
 
-                        fileIds.Add(await DoFileUpload(client, file));
+                        fileIds.Add(await DoFileUpload(_agentsClient, file));
                     }
                 }
             }
 
             if (fileIds.Count > 0)
             {
-                await DoCreateVectorStore(client, fileIds);
+                await DoCreateVectorStore(_agentsClient, fileIds);
             }
             else
             {

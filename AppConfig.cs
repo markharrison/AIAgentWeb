@@ -2,26 +2,25 @@
 {
     public class AppConfig
     {
-        private string _ProjectCS { get; set; }
+        private string _ProjectEndpoint { get; set; }
         private string _VectorStoreId { get; set; }
-
         private string _AgentId { get; set; }
         private IConfiguration _config { get; set; }
 
-
         public AppConfig(IConfiguration config)
         {
-            _ProjectCS = config.GetValue<string>("ProjectConnectionString") ?? "";
+            _ProjectEndpoint = config.GetValue<string>("ProjectEndpoint") ?? "";
             _VectorStoreId = config.GetValue<string>("VectorStoreId") ?? "vs_xxxx";
             _AgentId = config.GetValue<string>("AgentId") ?? "asst_xxxx";
             _config = config;
         }
 
-        public string ProjectCS
+        public string ProjectEndpoint
         {
-            get => this._ProjectCS;
-            set => this._ProjectCS = value;
+            get => this._ProjectEndpoint;
+            set => this._ProjectEndpoint = value;
         }
+
 
         public string VectorStoreId
         {

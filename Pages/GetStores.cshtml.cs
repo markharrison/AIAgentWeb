@@ -1,12 +1,8 @@
 using AIAgentWeb.Services;
-using Azure;
-using Azure.AI.Projects;
-using Azure.Identity;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Identity.Client;
-using System.Numerics;
 
 namespace AIAgentWeb.Pages
 {
@@ -15,7 +11,7 @@ namespace AIAgentWeb.Pages
         private readonly AppConfig _appconfig;
         private readonly IAntiforgery _antiforgery;
         private readonly AgentStateService _agentStateService;
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient _agentsClient;
 
         public GetStoresModel(AppConfig appconfig, IAntiforgery antiforgery, AgentStateService agentStateService)
         {
@@ -35,14 +31,12 @@ namespace AIAgentWeb.Pages
                     foreach (var storeId in selectedStores)
                     {
 
-                        var files = await _agentsClient.GetVectorStoreFilesAsync(storeId);
-
-                        foreach (var file in files.Value.Data)
+                        await foreach (var file in _agentsClient.VectorStores.GetVectorStoreFilesAsync(storeId))
                         {
-                            await _agentsClient.DeleteFileAsync(file.Id);
+                            await _agentsClient.Files.DeleteFileAsync(file.Id);
                         }
 
-                        await _agentsClient.DeleteVectorStoreAsync(storeId);
+                        await _agentsClient.VectorStores.DeleteVectorStoreAsync(storeId);
                     }
                     TempData["DeleteMessage"] = "Selected store(s) deleted";
                 }
@@ -58,42 +52,41 @@ namespace AIAgentWeb.Pages
         public async Task<IActionResult> OnGetGetStoresAsync()
         {
             string strHtml = "";
+            int count = 0;
 
-            var vectorStores = await _agentsClient.GetVectorStoresAsync();
+            var token = _antiforgery.GetAndStoreTokens(HttpContext).RequestToken;
 
-            if (vectorStores.Value.Data.Count == 0)
+            strHtml += "<form id='IdStoreForm' method='post' action='/GetStores?handler=DeleteStores'>";
+            strHtml += $"<input type='hidden' name='__RequestVerificationToken' value='{token}' />";
+            strHtml += "<table style='border-collapse: separate; border-spacing: 10px;'>";
+            strHtml += "<thead><tr><th></th><th>Vector Store Id</th><th>Name</th><th>Status</th><th>FileCount</th><th>File Ids</th></tr></thead>";
+            strHtml += "<tbody>";
+
+            await foreach (var store in _agentsClient.VectorStores.GetVectorStoresAsync())
             {
-                strHtml += "<div class=\"alert alert-info\" role=\"alert\">No vector stores.</div>";
-            }
-            else
-            {
-                var token = _antiforgery.GetAndStoreTokens(HttpContext).RequestToken;
+                count++;
 
-                strHtml += "<form id='IdStoreForm' method='post' action='/GetStores?handler=DeleteStores'>";
-                strHtml += $"<input type='hidden' name='__RequestVerificationToken' value='{token}' />";
-                strHtml += "<table style='border-collapse: separate; border-spacing: 10px;'>";
-                strHtml += "<thead><tr><th></th><th>Vector Store Id</th><th>Name</th><th>Status</th><th>FileCount</th><th>File Ids</th></tr></thead>";
-                strHtml += "<tbody>";
-                foreach (var store in vectorStores.Value.Data)
+                strHtml += "<tr style=\"vertical-align: top;\">";
+                strHtml += $"<td><input type='checkbox' name='selectedStores' value='{store.Id}' /></td>";
+                strHtml += $"<td>{store.Id}</td><td>{store.Name}</td><td>{store.Status}</td><td>{store.FileCounts.Completed}</td>";
+                strHtml += "<td>";
+
+                await foreach (var file in _agentsClient.VectorStores.GetVectorStoreFilesAsync(store.Id))
                 {
-                    strHtml += "<tr style=\"vertical-align: top;\">";
-                    strHtml += $"<td><input type='checkbox' name='selectedStores' value='{store.Id}' /></td>";
-                    strHtml += $"<td>{store.Id}</td><td>{store.Name}</td><td>{store.Status}</td><td>{store.FileCounts.Completed}</td>";
-
-                    strHtml += "<td>";                 
-                    var files = await _agentsClient.GetVectorStoreFilesAsync(store.Id);
-                    foreach (var file in files.Value.Data)
-                    {
-                        strHtml += file.Id + "<br/>";
-                    }
-                    strHtml += "</td>";
-
-                    strHtml += "</tr>";
+                    strHtml += file.Id + "<br/>";
                 }
-                strHtml += "</tbody>";
-                strHtml += "</table>";
-                strHtml += "<button class='btn btn-primary' id='IdSubmitBut' type='submit'>Delete Selected</button>";
-                strHtml += "</form>";
+                strHtml += "</td>";
+
+                strHtml += "</tr>";
+            }
+            strHtml += "</tbody>";
+            strHtml += "</table>";
+            strHtml += "<button class='btn btn-primary' id='IdSubmitBut' type='submit'>Delete Selected</button>";
+            strHtml += "</form>";
+
+            if (count == 0)
+            {
+                strHtml = "<div class=\"alert alert-info\" role=\"alert\">No vector stores.</div>";
             }
 
             return Content(strHtml, "text/html");

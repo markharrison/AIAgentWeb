@@ -1,15 +1,12 @@
 using AIAgentWeb.Services;
 using Azure;
-using Azure.AI.Projects;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
-using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
-using System.Threading;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AIAgentWeb.Pages
 {
@@ -18,7 +15,7 @@ namespace AIAgentWeb.Pages
         private readonly AppConfig _appconfig;
         private readonly IAntiforgery _antiforgery;
         private readonly AgentStateService _agentStateService;
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient _agentsClient;
         private readonly IWebHostEnvironment _environment;
 
         public string strHtml = "";
@@ -68,28 +65,28 @@ namespace AIAgentWeb.Pages
 
             try
             {
-                (Agent? agent, string? error) = await _agentStateService.GetAgentAsync(AgentId!);
+                (PersistentAgent? agent, string? error) = await _agentStateService.GetAgentAsync(AgentId!);
                 if (error != null)
                 {
                     return StatusCode(400, error);
                 }
 
-                (AgentThread? thread, string? error2) = await _agentStateService.GetAgentThreadAsync(ThreadId!);
+                (PersistentAgentThread? thread, string? error2) = await _agentStateService.GetAgentThreadAsync(ThreadId!);
                 if (error2 != null)
                 {
                     return StatusCode(400, error2);
                 }
 
-                Response<ThreadMessage> messageResponse = await _agentsClient.CreateMessageAsync(ThreadId, MessageRole.User, Ask);
+                Response<PersistentThreadMessage> messageResponse = await _agentsClient.Messages.CreateMessageAsync(ThreadId, MessageRole.User, Ask);
 
                 if (messageResponse.GetRawResponse().Status != 200)
                 {
                     return StatusCode(400, $"CreateMessageAsync - Error {messageResponse.GetRawResponse().Status}");
                 }
 
-                ThreadMessage message = messageResponse.Value;
+                PersistentThreadMessage message = messageResponse.Value;
 
-                Response<ThreadRun> runResponse = await _agentsClient.CreateRunAsync(thread, agent);
+                Response<ThreadRun> runResponse = await _agentsClient.Runs.CreateRunAsync(thread, agent);
                 if (runResponse.GetRawResponse().Status != 200)
                 {
                     return StatusCode(400, $"CreateRunAsync - Error {runResponse.GetRawResponse().Status}");
@@ -101,7 +98,7 @@ namespace AIAgentWeb.Pages
                 do
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(200));
-                    runResponse = await _agentsClient.GetRunAsync(ThreadId, threadRun.Id);
+                    runResponse = await _agentsClient.Runs.GetRunAsync(ThreadId, threadRun.Id);
                     if (runResponse.GetRawResponse().Status != 200)
                     {
                         return StatusCode(400, $"GetRunAsync - Error {runResponse.GetRawResponse().Status}");
@@ -114,87 +111,94 @@ namespace AIAgentWeb.Pages
                 while (threadRun.Status == RunStatus.Queued
                     || threadRun.Status == RunStatus.InProgress);
 
-                Response<PageableList<ThreadMessage>> afterRunMessagesResponse = await _agentsClient.GetMessagesAsync(ThreadId, limit: 1);
-                IReadOnlyList<ThreadMessage> messages = afterRunMessagesResponse.Value.Data;
+
+                PersistentThreadMessage? threadMessage = null;
+
+                // Bug - limit doesnt work https://github.com/Azure/azure-sdk-for-net/issues/50378
+
+                await foreach (var msg in _agentsClient.Messages.GetMessagesAsync(ThreadId, limit: 1))
+                {
+                    threadMessage = msg;
+                    break;
+                }
+
+                if (threadMessage == null)
+                {
+                    return StatusCode(400, "No messages found in the thread.");
+                }
 
                 var annotationsList = new List<(string Text, string Filename)>();
-
-
-                foreach (ThreadMessage threadMessage in messages.Reverse())
+                foreach (MessageContent contentItem in threadMessage.ContentItems)
                 {
-                    foreach (MessageContent contentItem in threadMessage.ContentItems)
+
+                    switch (contentItem)
                     {
+                        case MessageTextContent messagetextItem:
 
-                        switch (contentItem)
-                        {
-                            case MessageTextContent messagetextItem:
+                            strHtml += $"{messagetextItem.Text.Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")}";
 
-                                strHtml += $"{messagetextItem.Text.Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")}";
+                            foreach (MessageTextAnnotation annotation in messagetextItem.Annotations)
+                            {
 
-                                foreach (MessageTextAnnotation annotation in messagetextItem.Annotations)
+                                switch (annotation)
                                 {
+                                    case MessageTextFileCitationAnnotation annot:
 
-                                    switch (annotation)
-                                    {
-                                        case MessageTextFileCitationAnnotation annot:
+                                        if (!annotationsList.Any(a => a.Text == annot.Text))
+                                        {
+                                            var filename = await _agentStateService.GetAgentFileNameAsync(annot.FileId);
 
-                                            if (!annotationsList.Any(a => a.Text == annot.Text))
-                                            {
-                                                var filename = await _agentStateService.GetAgentFileNameAsync(annot.FileId);
+                                            annotationsList.Add((annot.Text, filename!));
+                                        }
 
-                                                annotationsList.Add((annot.Text, filename!));
-                                            }
+                                        break;
 
-                                            break;
+                                    case MessageTextUriCitationAnnotation annot:
 
-                                        case MessageTextUrlCitationAnnotation annot:
+                                        if (!annotationsList.Any(a => a.Text == annot.Text))
+                                        {
+                                            var filename = annot.UriCitation.Uri;
 
-                                            if (!annotationsList.Any(a => a.Text == annot.Text))
-                                            {
-                                                var filename = annot.UrlCitation.Url;
+                                            annotationsList.Add((annot.Text, filename!));
+                                        }
 
-                                                annotationsList.Add((annot.Text, filename!));
-                                            }
+                                        break;
 
-                                            break;
-
-                                        default:
-                                            strHtml += "[[unknown annotation type]]";
-                                            break;
-                                    }
-
+                                    default:
+                                        strHtml += "[[unknown annotation type]]";
+                                        break;
                                 }
 
-                                break;
+                            }
 
-                            case MessageImageFileContent imageFileItem:
+                            break;
 
-                                var fileId = imageFileItem.FileId;
+                        case MessageImageFileContent imageFileItem:
 
-                                AgentFile agentFile = await _agentsClient.GetFileAsync(fileId);
-                                var fileName = agentFile.Filename;
+                            var fileId = imageFileItem.FileId;
 
-                                BinaryData fileData = await _agentsClient.GetFileContentAsync(fileId);
+                            PersistentAgentFileInfo agentFile = await _agentsClient.Files.GetFileAsync(fileId);
+                            var fileName = agentFile.Filename;
 
-                                var appDataPath = Path.Combine(_environment.WebRootPath, "temp");
-                                if (!Directory.Exists(appDataPath))
-                                {
-                                    Directory.CreateDirectory(appDataPath);
-                                }
+                            BinaryData fileData = await _agentsClient.Files.GetFileContentAsync(fileId);
 
-                                string filePath = Path.Combine(appDataPath, fileName);
+                            var appDataPath = Path.Combine(_environment.WebRootPath, "temp");
+                            if (!Directory.Exists(appDataPath))
+                            {
+                                Directory.CreateDirectory(appDataPath);
+                            }
 
-                                await System.IO.File.WriteAllBytesAsync(filePath, fileData.ToArray());
+                            string filePath = Path.Combine(appDataPath, fileName);
 
-                                strHtml += $"<img style='max-width: 75%; height: auto;' src='/temp/{fileName}' ><br />";
+                            await System.IO.File.WriteAllBytesAsync(filePath, fileData.ToArray());
 
-                                break;
-                            default:
-                                strHtml += "[[unknown contentItem type]]";
-                                break;
+                            strHtml += $"<img style='max-width: 75%; height: auto;' src='/temp/{fileName}' ><br />";
 
+                            break;
+                        default:
+                            strHtml += "[[unknown contentItem type]]";
+                            break;
 
-                        }
 
                     }
 
@@ -251,7 +255,7 @@ namespace AIAgentWeb.Pages
             string result = Regex.Replace(input, pattern, match =>
             {
                 string url = match.Value;
-                if (url.EndsWith(".") )
+                if (url.EndsWith("."))
                 {
                     url = url.Substring(0, url.Length - 1);
                 }
@@ -284,7 +288,7 @@ namespace AIAgentWeb.Pages
                 return Page();
             }
 
-            (Agent? agent, string? error) = await _agentStateService.GetAgentAsync(AgentId!);
+            (PersistentAgent? agent, string? error) = await _agentStateService.GetAgentAsync(AgentId!);
             if (error != null)
             {
                 TempData["ErrorMessage"] = error;
@@ -303,7 +307,7 @@ namespace AIAgentWeb.Pages
                 }
             }
 
-            (AgentThread? thread, string? error2) = await _agentStateService.CreateAgentThreadAsync();
+            (PersistentAgentThread? thread, string? error2) = await _agentStateService.CreateAgentThreadAsync();
             if (error2 != null)
             {
                 TempData["ErrorMessage"] = error2;

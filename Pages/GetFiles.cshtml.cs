@@ -1,12 +1,8 @@
 using AIAgentWeb.Services;
-using Azure;
-using Azure.AI.Projects;
-using Azure.Identity;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Identity.Client;
-using System.Numerics;
 
 namespace AIAgentWeb.Pages
 {
@@ -15,9 +11,9 @@ namespace AIAgentWeb.Pages
         private readonly AppConfig _appconfig;
         private readonly IAntiforgery _antiforgery;
         private readonly AgentStateService _agentStateService;
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient _agentsClient;
 
-        public GetFilesModel(AppConfig appconfig, IAntiforgery antiforgery ,AgentStateService agentStateService)
+        public GetFilesModel(AppConfig appconfig, IAntiforgery antiforgery, AgentStateService agentStateService)
         {
             _antiforgery = antiforgery;
             _appconfig = appconfig;
@@ -35,7 +31,7 @@ namespace AIAgentWeb.Pages
 
                     foreach (var fileId in selectedFiles)
                     {
-                        await _agentsClient.DeleteFileAsync(fileId);
+                        await _agentsClient.Files.DeleteFileAsync(fileId);
                     }
                     TempData["DeleteMessage"] = "Selected files(s) deleted";
                 }
@@ -55,19 +51,15 @@ namespace AIAgentWeb.Pages
 
             var fileStoreList = new List<(string FileId, string StoreId)>();
 
-            var vectorStores = await _agentsClient.GetVectorStoresAsync();
-            foreach (var store in vectorStores.Value.Data)
+            await foreach (var store in _agentsClient.VectorStores.GetVectorStoresAsync())
             {
-
-                var fs = await _agentsClient.GetVectorStoreFilesAsync(store.Id);
-
-                foreach (var f in fs.Value.Data)
+                await foreach (var f in _agentsClient.VectorStores.GetVectorStoreFilesAsync(store.Id))
                 {
                     fileStoreList.Add((f.Id, store.Id));
                 }
             }
 
-            var files = await _agentsClient.GetFilesAsync();
+            var files = await _agentsClient.Files.GetFilesAsync();
 
             if (files.Value.Count == 0)
             {
@@ -80,7 +72,7 @@ namespace AIAgentWeb.Pages
                 strHtml += "<form id='IdFileForm' method='post' action='/GetFiles?handler=DeleteFiles'>";
                 strHtml += $"<input type='hidden' name='__RequestVerificationToken' value='{token}' />";
                 strHtml += "<table style='border-collapse: separate; border-spacing: 10px;'>";
-                strHtml += "<thead><tr><th></th><th>File Id</th><th>Name</th><th>Status</th><th>Vector Store Id</th></tr></thead>"; 
+                strHtml += "<thead><tr><th></th><th>File Id</th><th>Name</th><th>Status</th><th>Vector Store Id</th></tr></thead>";
                 strHtml += "<tbody>";
                 foreach (var file in files.Value)
                 {
@@ -97,8 +89,6 @@ namespace AIAgentWeb.Pages
                     }
 
                     strHtml += "</td>";
-
-
 
                     strHtml += "</tr>";
                 }

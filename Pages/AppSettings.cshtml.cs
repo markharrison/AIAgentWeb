@@ -18,8 +18,8 @@ namespace AIAgentWeb.Pages
         }
 
         [BindProperty]
-        [Required(ErrorMessage = "Project Connection String is required.")]
-        public string? ProjectCS { get; set; }
+        [Required(ErrorMessage = "Project Endpoint is required.")]
+        public string? ProjectEndPoint{ get; set; }
 
         [BindProperty]
         [Required(ErrorMessage = "VectorStoreId is required.")]
@@ -31,21 +31,20 @@ namespace AIAgentWeb.Pages
 
         public void OnGet()
         {
-
-            ProjectCS = _appconfig.ProjectCS;
+            ProjectEndPoint = _appconfig.ProjectEndpoint;
             VectorStoreId = _appconfig.VectorStoreId;
             AgentId = _appconfig.AgentId;
         }
 
         public IActionResult OnPost()
         {
-            ProjectCS = ProjectCS?.Trim();
+            ProjectEndPoint = ProjectEndPoint?.Trim();
             AgentId = AgentId?.Trim();
             VectorStoreId = VectorStoreId?.Trim();
 
-            if (string.IsNullOrEmpty(ProjectCS))
+            if (string.IsNullOrEmpty(ProjectEndPoint))
             {
-                ModelState.AddModelError("ProjectCS", "Project Connection String is required.");
+                ModelState.AddModelError("ProjectEndpoint", "Project Endpoint is required.");
             }
 
             if (string.IsNullOrEmpty(AgentId))
@@ -72,11 +71,7 @@ namespace AIAgentWeb.Pages
                 return Page();
             }
 
-
-
-
-
-            _appconfig.ProjectCS = ProjectCS!;
+            _appconfig.ProjectEndpoint = ProjectEndPoint!;
             _appconfig.VectorStoreId = VectorStoreId!;
             _appconfig.AgentId = AgentId!;
 

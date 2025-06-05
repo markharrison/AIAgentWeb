@@ -1,28 +1,29 @@
-using Azure.AI.Agents.Persistent;
+using Azure;
+using Azure.AI.Projects;
 using Azure.Identity;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace AIAgentWeb.Services
 {
-    public class AgentStateService
+    public class AgentStateServiceHub
     {
-        private readonly PersistentAgentsClient _agentsClient;
-//        private readonly AgentsClient _agentsClient;
+        private readonly AgentsClient _agentsClient;
         private readonly AppConfig _appconfig;
 
         // Use ThreadId and AgentId as dictionary keys
-        private readonly ConcurrentDictionary<string, PersistentAgentThread> _threadCache = new();
-        private readonly ConcurrentDictionary<string, PersistentAgent> _agentCache = new();
+        private readonly ConcurrentDictionary<string, AgentThread> _threadCache = new();
+        private readonly ConcurrentDictionary<string, Agent> _agentCache = new();
         private readonly ConcurrentDictionary<string, string> _filePathCache = new();
 
         private readonly IWebHostEnvironment _environment;
-        public AgentStateService(AppConfig appConfig, IWebHostEnvironment environment)
+        public AgentStateServiceHub(AppConfig appConfig, IWebHostEnvironment environment)
         {
             _environment = environment;
             _appconfig = appConfig;
             try
-            { 
-                 _agentsClient = new(appConfig.ProjectEndpoint, new DefaultAzureCredential());
+            {
+                _agentsClient = new AgentsClient(appConfig.ProjectCS, new DefaultAzureCredential());
             }
             catch (Exception ex)
             {
@@ -32,8 +33,7 @@ namespace AIAgentWeb.Services
             try
             {
                 // To warm up the connection 
-                //  Response<Agent> agentResponse = _agentsClient.GetAgent("asst_Junk");
-                var agentResponse = _agentsClient!.Administration.GetAgent("asst_Junk");
+                Response<Agent> agentResponse = _agentsClient.GetAgent("asst_Junk");
             }
             catch 
             {
@@ -46,7 +46,7 @@ namespace AIAgentWeb.Services
 
             try
             {
-                var agentResponse = _agentsClient!.Files.GetFiles();
+                var agentResponse = _agentsClient.GetFiles();
                 var files = agentResponse.Value;
 
                 foreach (var file in files)
@@ -59,9 +59,11 @@ namespace AIAgentWeb.Services
                 throw new Exception("Failed to initialize AgentsClient 2", ex);
             }
 
+
+
         }
 
-        public PersistentAgentsClient agentsClient
+        public AgentsClient agentsClient
         {
             get => this._agentsClient;
         }
@@ -86,12 +88,13 @@ namespace AIAgentWeb.Services
                 return fileName;
             }
 
-            PersistentAgentFileInfo agentFile = await agentsClient.Files.GetFileAsync(fileId);
+            AgentFile agentFile = await agentsClient.GetFileAsync(fileId);
 
             StoreAgentFileName(fileId, agentFile.Filename);
 
             return agentFile.Filename;
         }
+
 
 
         public void StoreAgentFileName(string fileId, string fileName)
@@ -101,22 +104,22 @@ namespace AIAgentWeb.Services
         }
 
 
-        public async Task<(PersistentAgent? agent, string? error)> GetAgentAsync(string agentId)
+        public async Task<(Agent? agent, string? error)> GetAgentAsync(string agentId)
         {
-            if (TryGetAgent(agentId, out PersistentAgent? cachedAgent))
+            if (TryGetAgent(agentId, out Agent? cachedAgent))
             {
                 return (cachedAgent, null);
             }
 
             try
             {
-                var agentResponse = await _agentsClient.Administration.GetAgentAsync(agentId);
+                var agentResponse = await _agentsClient.GetAgentAsync(agentId);
                 if (agentResponse.GetRawResponse().Status != 200)
                 {
                     return (null, $"GetAgentAsync - An error {agentResponse.GetRawResponse().Status} occurred while getting the agent.");
                 }
 
-                PersistentAgent agent = agentResponse.Value;
+                Agent agent = agentResponse.Value;
                 StoreAgent(agentId, agent);
 
                 return (agent, null);
@@ -127,21 +130,21 @@ namespace AIAgentWeb.Services
             }
         }
 
-        public void StoreAgent(string agentId, PersistentAgent agent)
+        public void StoreAgent(string agentId, Agent agent)
         {
             _agentCache[agentId] = agent;
         }
 
-        public bool TryGetAgent(string agentId, out PersistentAgent? agent)
+        public bool TryGetAgent(string agentId, out Agent? agent)
         {
             return _agentCache.TryGetValue(agentId, out agent);
         }
 
-        public async Task<(PersistentAgentThread? thread, string? error)> GetAgentThreadAsync(string threadId)
+        public async Task<(AgentThread? thread, string? error)> GetAgentThreadAsync(string threadId)
         {
             await Task.Run(() => { });
 
-            if (TryGetAgentThread(threadId, out PersistentAgentThread? cachedThread))
+            if (TryGetAgentThread(threadId, out AgentThread? cachedThread))
             {
                 return (cachedThread, null);
             }
@@ -150,17 +153,17 @@ namespace AIAgentWeb.Services
 
         }
 
-        public async Task<(PersistentAgentThread? thread, string? error)> CreateAgentThreadAsync()
+        public async Task<(AgentThread? thread, string? error)> CreateAgentThreadAsync()
         {
             try
             {
-                var threadResponse = await _agentsClient.Threads.CreateThreadAsync();
+                var threadResponse = await _agentsClient.CreateThreadAsync();
                 if (threadResponse.GetRawResponse().Status != 200)
                 {
                     return (null, $"CreateAgentThreadAsync - An error {threadResponse.GetRawResponse().Status} occurred while creating the thread.");
                 }
 
-                PersistentAgentThread thread = threadResponse.Value;
+                AgentThread thread = threadResponse.Value;
                 StoreAgentThread(thread.Id, thread);
 
                 return (thread, null);
@@ -171,7 +174,7 @@ namespace AIAgentWeb.Services
             }
         }
 
-        public void StoreAgentThread(string threadId, PersistentAgentThread thread)
+        public void StoreAgentThread(string threadId, AgentThread thread)
         {
             _threadCache[threadId] = thread;
         }
@@ -182,13 +185,16 @@ namespace AIAgentWeb.Services
             {
                 var oneHourAgo = DateTime.UtcNow.AddHours(-1);
 
-                var threads = _agentsClient.Threads.GetThreads();
+                var threads = _agentsClient.GetThreads();
 
-                foreach (var thread in threads)
+                if (threads.Value.Data.Count > 0)
                 {
-                    if (thread.CreatedAt < oneHourAgo)
+                    foreach (var thread in threads.Value.Data)
                     {
-                        var rsp = _agentsClient.Threads.DeleteThread(thread.Id);
+                        if (thread.CreatedAt < oneHourAgo)
+                        {
+                            var rsp = _agentsClient.DeleteThread(thread.Id);
+                        }
                     }
                 }
 
@@ -200,7 +206,7 @@ namespace AIAgentWeb.Services
         }
 
 
-        public bool TryGetAgentThread(string threadId, out PersistentAgentThread? thread)
+        public bool TryGetAgentThread(string threadId, out AgentThread? thread)
         {
             return _threadCache.TryGetValue(threadId, out thread);
         }

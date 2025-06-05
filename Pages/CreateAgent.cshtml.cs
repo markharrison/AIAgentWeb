@@ -1,13 +1,10 @@
 using AIAgentWeb.Services;
 using Azure;
-using Azure.AI.Projects;
-using Azure.Identity;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Identity.Client;
 using System.ComponentModel.DataAnnotations;
-using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace AIAgentWeb.Pages
@@ -17,7 +14,7 @@ namespace AIAgentWeb.Pages
         private readonly AppConfig _appconfig;
         private readonly IAntiforgery _antiforgery;
         private readonly AgentStateService _agentStateService;
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient  _agentsClient;
 
         private float fTemperature = 0;
         private float fTopP = 0;
@@ -127,7 +124,6 @@ namespace AIAgentWeb.Pages
             }
 
 
-
             if (FileSearchTool)
             {
                 VectorStoreId = VectorStoreId.Trim();
@@ -159,7 +155,7 @@ namespace AIAgentWeb.Pages
 
             try
             {
-                Response<Agent> agentResponse = await _agentsClient.CreateAgentAsync(
+                Response<PersistentAgent> agentResponse = await _agentsClient.Administration.CreateAgentAsync(
                     model: ModelDeployment,
                     name: AgentName,
                     instructions: AgentInstructions,
@@ -175,7 +171,7 @@ namespace AIAgentWeb.Pages
                     return Page();
                 }
 
-                Agent agent = agentResponse.Value;
+                PersistentAgent agent = agentResponse.Value;
 
                 var strId = $"<span id='IdTextToCopy'>{agent.Id}</span>&nbsp;";
                 strId += "<button id='IdCopyBut' class='btn btn-success btn-sm copy-button' onclick='copyText()' aria-label='Copy'>";

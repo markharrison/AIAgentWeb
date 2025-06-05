@@ -1,13 +1,6 @@
-using Azure;
-using Azure.AI.Projects;
-using Azure.Identity;
-using Microsoft.Extensions.Logging;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents;
+using Azure.AI.Agents.Persistent;
 using Microsoft.SemanticKernel.Agents.AzureAI;
 using System.Collections.Concurrent;
-using System.IO;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using SKAgent = Microsoft.SemanticKernel.Agents.AzureAI.AzureAIAgent;
 using SKAgentThread = Microsoft.SemanticKernel.Agents.AzureAI.AzureAIAgentThread;
 
@@ -18,7 +11,7 @@ namespace AIAgentWeb.Services
 {
     public class AgentStateServiceSK
     {
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient _agentsClient;
         private readonly AppConfig _appconfig;
         private readonly AgentStateService _agentStateService;
 
@@ -36,7 +29,7 @@ namespace AIAgentWeb.Services
 
         }
 
-        public AgentsClient agentsClient
+        public PersistentAgentsClient agentsClient
         {
             get => this._agentsClient;
         }
@@ -52,7 +45,7 @@ namespace AIAgentWeb.Services
 
             try
             {
-                (Azure.AI.Projects.Agent? agent, string? error) = await _agentStateService.GetAgentAsync(agentId);
+                (PersistentAgent? agent, string? error) = await _agentStateService.GetAgentAsync(agentId);
                 if (error != null)
                 {
                     return (null, error);
@@ -102,7 +95,7 @@ namespace AIAgentWeb.Services
             try
             {
 
-                (Azure.AI.Projects.AgentThread? thread, string? error) = await _agentStateService.CreateAgentThreadAsync();
+                (PersistentAgentThread? thread, string? error) = await _agentStateService.CreateAgentThreadAsync();
                 if (error != null)
                 {
                     return (null, error);

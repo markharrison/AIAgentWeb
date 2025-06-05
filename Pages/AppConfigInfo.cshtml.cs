@@ -30,7 +30,7 @@ namespace AIAgentWeb.Pages
                 strAppConfigInfoHtml += "Build Identifier: " + _appconfig.config.GetValue<string>("BuildIdentifier") + "<br/>";
                 strAppConfigInfoHtml += "OTEL_EXPORTER_OTLP_ENDPOINT: " + _appconfig.config.GetValue<string>("OTEL_EXPORTER_OTLP_ENDPOINT") + "<br/>";
                 strAppConfigInfoHtml += "<br/>";
-                strAppConfigInfoHtml += "Project Connection string: " + _appconfig.ProjectCS + "<br/>";
+                strAppConfigInfoHtml += "Project Endpoint: " + _appconfig.ProjectEndpoint + "<br/>";
                 strAppConfigInfoHtml += "Vector Store Id: " + _appconfig.VectorStoreId + "<br/>";
             }
             catch (Exception ex)

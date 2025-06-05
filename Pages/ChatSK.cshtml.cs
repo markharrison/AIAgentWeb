@@ -1,18 +1,14 @@
 using AIAgentWeb.Services;
-using Azure;
-using Azure.AI.Projects;
+using Azure.AI.Agents.Persistent;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Agents;
-using Microsoft.SemanticKernel.Agents.AzureAI;
 using Microsoft.SemanticKernel.ChatCompletion;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
-using System.Threading;
 using SKAgent = Microsoft.SemanticKernel.Agents.AzureAI.AzureAIAgent;
 using SKAgentThread = Microsoft.SemanticKernel.Agents.AzureAI.AzureAIAgentThread;
 
@@ -27,7 +23,7 @@ namespace AIAgentWeb.Pages
         private readonly IAntiforgery _antiforgery;
         private readonly AgentStateService _agentStateService;
         private readonly AgentStateServiceSK _agentStateServiceSK;
-        private readonly AgentsClient _agentsClient;
+        private readonly PersistentAgentsClient _agentsClient;
         private readonly IWebHostEnvironment _environment;
         public string strHtml = "";
 
@@ -101,10 +97,10 @@ namespace AIAgentWeb.Pages
                 var annotationsList = new List<(string Text, string Filename)>();
                 foreach (AnnotationContent footnote in footnotes)
                 {
-                    if (!annotationsList.Any(a => a.Text == footnote.Quote))
+                    if (!annotationsList.Any(a => a.Text == footnote.Label))
                     {
-                        var filename = await _agentStateService.GetAgentFileNameAsync(footnote.FileId!);
-                        annotationsList.Add((footnote.Quote!, filename!));
+                        var filename = await _agentStateService.GetAgentFileNameAsync(footnote.ReferenceId!);
+                        annotationsList.Add((footnote.Label!, filename!));
 
                     }
                 }
