@@ -404,3 +404,4 @@ FodyWeavers.xsd
 .vscode/
 .config/dotnet-tools.json
 /App_Data
+/wwwroot/temp/TextFile.txt
