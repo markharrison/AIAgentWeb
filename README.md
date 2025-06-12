@@ -2,15 +2,15 @@
 
 Web Interface to connect to AI Foundry Agent Service.
 
-Chat with agents
+- Chat with agents
 
-List Agents
-Create Agents
+- List Agents
+- Create Agents
 
-Delete Agents
-Delete Threads
+- Delete Agents
+- Delete Threads
 
-Upload files
+- Upload files
 
 ![screenshot](./docs/scrn1.png)
  
